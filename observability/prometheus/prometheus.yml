@@ -1,0 +1,116 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Claims Service
+  - job_name: 'claims-service'
+    static_configs:
+      - targets: ['claims-service:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # AI Service
+  - job_name: 'ai-service'
+    static_configs:
+      - targets: ['ai-service:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Auth Service
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Notification Service
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Payment Service
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['payment-service:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # File Service
+  - job_name: 'file-service'
+    static_configs:
+      - targets: ['file-service:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # MLOps Service
+  - job_name: 'mlops-service'
+    static_configs:
+      - targets: ['mlops-service:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # MLflow
+  - job_name: 'mlflow'
+    static_configs:
+      - targets: ['mlflow:5000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Jaeger
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:8888']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # AlertManager
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Database Monitoring
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis Monitoring
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Container metrics (cAdvisor)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s 

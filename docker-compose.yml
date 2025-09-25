@@ -1,0 +1,367 @@
+version: '3.8'
+
+services:
+  # Frontend Applications
+  customer-portal:
+    build:
+      context: ./apps/customer-portal
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./apps/customer-portal:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+
+  adjuster-dashboard:
+    build:
+      context: ./apps/adjuster-dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./apps/adjuster-dashboard:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+
+  admin-panel:
+    build:
+      context: ./apps/admin-panel
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./apps/admin-panel:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+
+  # Backend Services
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://claims:claims@postgres:5432/claims
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-jwt-secret
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/api-gateway:/app
+
+  claims-service:
+    build:
+      context: ./services/claims-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://claims:claims@postgres:5432/claims
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/claims-service:/app
+
+  ai-service:
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8000"
+    environment:
+      - ENVIRONMENT=development
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./services/ai-service:/app
+      - ./ml/models:/app/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://claims:claims@postgres:5432/claims
+      - JWT_SECRET=your-jwt-secret
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/auth-service:/app
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8000"
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379
+      - SENDGRID_API_KEY=your-sendgrid-key
+    depends_on:
+      - redis
+    volumes:
+      - ./services/notification-service:/app
+
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://claims:claims@postgres:5432/claims
+      - STRIPE_SECRET_KEY=your-stripe-secret
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/payment-service:/app
+
+  file-service:
+    build:
+      context: ./services/file-service
+      dockerfile: Dockerfile
+    ports:
+      - "8006:8000"
+    environment:
+      - ENVIRONMENT=development
+      - AWS_ACCESS_KEY_ID=your-aws-key
+      - AWS_SECRET_ACCESS_KEY=your-aws-secret
+      - S3_BUCKET_NAME=claims-documents
+    volumes:
+      - ./services/file-service:/app
+      - ./storage:/app/storage
+
+  # MLOps Service
+  mlops-service:
+    build:
+      context: ./ml/mlops
+      dockerfile: Dockerfile
+    ports:
+      - "8007:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://claims:claims@postgres:5432/claims
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MONITORING_WEBHOOK_URL=http://notification-service:8000/webhook
+    depends_on:
+      - postgres
+      - mlflow
+    volumes:
+      - ./ml:/app/ml
+      - ./ml/models:/app/models
+      - mlflow_data:/app/mlflow
+
+      # MLflow Tracking Server
+    mlflow:
+      image: python:3.9-slim
+      ports:
+        - "5000:5000"
+      environment:
+        - MLFLOW_BACKEND_STORE_URI=postgresql://claims:claims@postgres:5432/claims
+        - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+      volumes:
+        - mlflow_data:/mlflow
+      depends_on:
+        - postgres
+      command: >
+        bash -c "
+          pip install mlflow psycopg2-binary &&
+          mlflow server
+          --backend-store-uri postgresql://claims:claims@postgres:5432/claims
+          --default-artifact-root /mlflow/artifacts
+          --host 0.0.0.0
+          --port 5000
+        "
+
+    # Notification Service
+    notification-service:
+      build:
+        context: ./services/notification-service
+        dockerfile: Dockerfile
+      ports:
+        - "8004:8000"
+      environment:
+        - ENVIRONMENT=development
+        - SMTP_SERVER=smtp.gmail.com
+        - SMTP_PORT=587
+        - SMTP_USERNAME=${SMTP_USERNAME:-}
+        - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+        - FROM_EMAIL=${FROM_EMAIL:-noreply@claims.com}
+        - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+        - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+        - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+        - FIREBASE_SERVER_KEY=${FIREBASE_SERVER_KEY:-}
+      volumes:
+        - ./services/notification-service:/app
+      depends_on:
+        - postgres
+        - redis
+
+    # Payment Service
+    payment-service:
+      build:
+        context: ./services/payment-service
+        dockerfile: Dockerfile
+      ports:
+        - "8005:8000"
+      environment:
+        - ENVIRONMENT=development
+        - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+        - BANK_API_KEY=${BANK_API_KEY:-}
+        - NOTIFICATION_SERVICE_URL=http://notification-service:8000
+      volumes:
+        - ./services/payment-service:/app
+      depends_on:
+        - postgres
+        - notification-service
+
+    # File Service
+    file-service:
+      build:
+        context: ./services/file-service
+        dockerfile: Dockerfile
+      ports:
+        - "8006:8000"
+      environment:
+        - ENVIRONMENT=development
+        - UPLOAD_DIR=/app/uploads
+        - MAX_FILE_SIZE=50000000
+        - USE_S3=${USE_S3:-false}
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+        - AWS_REGION=${AWS_REGION:-us-east-1}
+        - S3_BUCKET_NAME=${S3_BUCKET_NAME:-claims-documents}
+      volumes:
+        - ./services/file-service:/app
+        - file_uploads:/app/uploads
+      depends_on:
+        - postgres
+
+  # Databases
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=claims
+      - POSTGRES_USER=claims
+      - POSTGRES_PASSWORD=claims
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Observability Stack
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./observability/grafana:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+      - "6831:6831/udp"  # Jaeger agent
+      - "6832:6832/udp"  # Jaeger agent
+      - "5778:5778"  # Config server
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+      - SPAN_STORAGE_TYPE=memory
+      - JAEGER_DISABLED=false
+      - METRICS_BACKEND=prometheus
+      - METRICS_HTTP_ROUTE=/metrics
+    volumes:
+      - ./observability/jaeger:/etc/jaeger
+
+  # AlertManager
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./observability/alertmanager:/etc/alertmanager
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--cluster.advertise-address=0.0.0.0:9093'
+
+  # ML Services
+  jupyter:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    volumes:
+      - ./ml:/home/jovyan/work
+    command: start-notebook.sh --NotebookApp.token=''
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  mlflow_data:
+  file_uploads:
+  alertmanager_data:
+  jaeger_data:
+  elasticsearch_data: 

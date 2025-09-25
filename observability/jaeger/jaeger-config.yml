@@ -1,0 +1,68 @@
+query:
+  base-path: /
+
+collector:
+  zipkin:
+    host-port: :9411
+
+storage:
+  type: elasticsearch
+  elasticsearch:
+    server-urls: http://elasticsearch:9200
+    index-prefix: jaeger
+    create-index-templates: true
+    version: 7
+    
+  # Alternative: In-memory storage for development
+  # type: memory
+  # memory:
+  #   max-traces: 50000
+
+agent:
+  http-server:
+    host-port: :5778
+  thrift:
+    compact:
+      host-port: :6831
+    binary:
+      host-port: :6832
+  config-server:
+    host-port: :5778
+
+sampling:
+  strategies:
+    default_strategy:
+      type: probabilistic
+      param: 0.1  # Sample 10% of traces
+    per_service_strategies:
+      - service: "api-gateway"
+        type: probabilistic
+        param: 0.5  # Sample 50% for API Gateway
+      - service: "claims-service"
+        type: probabilistic
+        param: 0.3  # Sample 30% for Claims Service
+      - service: "ai-service"
+        type: probabilistic
+        param: 0.8  # Sample 80% for AI Service (most important)
+      - service: "auth-service"
+        type: probabilistic
+        param: 0.2  # Sample 20% for Auth Service
+      - service: "notification-service"
+        type: probabilistic
+        param: 0.1  # Sample 10% for Notifications
+      - service: "payment-service"
+        type: probabilistic
+        param: 0.4  # Sample 40% for Payments
+      - service: "file-service"
+        type: probabilistic
+        param: 0.3  # Sample 30% for File Service
+      - service: "mlops-service"
+        type: probabilistic
+        param: 0.6  # Sample 60% for MLOps
+
+# Metrics configuration
+metrics:
+  backend: prometheus
+  http:
+    route: /metrics
+    port: 8888 

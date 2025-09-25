@@ -1,0 +1,401 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "ML Model Monitoring",
+    "tags": ["ml", "ai", "fraud-detection", "monitoring"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Model Performance Summary",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "fraud:model_accuracy",
+            "legendFormat": "Accuracy",
+            "refId": "A"
+          },
+          {
+            "expr": "fraud:model_precision",
+            "legendFormat": "Precision",
+            "refId": "B"
+          },
+          {
+            "expr": "fraud:model_recall",
+            "legendFormat": "Recall",
+            "refId": "C"
+          },
+          {
+            "expr": "fraud:model_f1_score",
+            "legendFormat": "F1 Score",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 0.7},
+                {"color": "green", "value": 0.8}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Prediction Volume",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(fraud_predictions_total[1h]))",
+            "legendFormat": "Predictions/hour",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Model Inference Latency",
+        "type": "gauge",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "ml:inference_latency_p95 * 1000",
+            "legendFormat": "95th Percentile (ms)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "unit": "ms",
+            "min": 0,
+            "max": 5000,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 1000},
+                {"color": "red", "value": 3000}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Data Drift Status",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "expr": "data_drift_detected",
+            "legendFormat": "Drift Detected",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [
+              {"options": {"0": {"text": "No Drift", "color": "green"}}, "type": "value"},
+              {"options": {"1": {"text": "DRIFT DETECTED", "color": "red"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "red", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Fraud Detection Rate Over Time",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [
+          {
+            "expr": "fraud:detection_rate * 100",
+            "legendFormat": "Fraud Detection Rate %",
+            "refId": "A"
+          },
+          {
+            "expr": "avg_over_time(fraud:detection_rate[24h]) * 100",
+            "legendFormat": "24h Average %",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "custom": {
+              "fillOpacity": 10,
+              "lineWidth": 2
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Model Performance Metrics",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [
+          {
+            "expr": "fraud:model_accuracy * 100",
+            "legendFormat": "Accuracy %",
+            "refId": "A"
+          },
+          {
+            "expr": "fraud:model_precision * 100",
+            "legendFormat": "Precision %",
+            "refId": "B"
+          },
+          {
+            "expr": "fraud:model_recall * 100",
+            "legendFormat": "Recall %",
+            "refId": "C"
+          },
+          {
+            "expr": "fraud:model_f1_score * 100",
+            "legendFormat": "F1 Score %",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "min": 60,
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Prediction Distribution",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 12},
+        "targets": [
+          {
+            "expr": "sum by (prediction) (increase(fraud_predictions_total[6h]))",
+            "legendFormat": "{{prediction}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "mappings": [
+              {"options": {"fraud": {"color": "red"}}, "type": "value"},
+              {"options": {"legitimate": {"color": "green"}}, "type": "value"}
+            ]
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Model Inference Latency Distribution",
+        "type": "histogram",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 12},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, rate(model_inference_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(model_inference_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(model_inference_duration_seconds_bucket[5m]))",
+            "legendFormat": "99th percentile",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Feature Drift Analysis",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 12},
+        "targets": [
+          {
+            "expr": "feature_drift_score",
+            "legendFormat": "{{feature}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "spectrum",
+              "scheme": "RdYlGn",
+              "reverse": true
+            }
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Model Training History",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 20},
+        "targets": [
+          {
+            "expr": "model_training_accuracy",
+            "legendFormat": "Training Accuracy",
+            "refId": "A"
+          },
+          {
+            "expr": "model_validation_accuracy",
+            "legendFormat": "Validation Accuracy",
+            "refId": "B"
+          },
+          {
+            "expr": "model_test_accuracy",
+            "legendFormat": "Test Accuracy",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percentunit"
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Model Resource Usage",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 20},
+        "targets": [
+          {
+            "expr": "model_memory_usage_bytes / 1024 / 1024",
+            "legendFormat": "Memory Usage (MB)",
+            "refId": "A"
+          },
+          {
+            "expr": "model_cpu_usage_percent",
+            "legendFormat": "CPU Usage %",
+            "refId": "B"
+          },
+          {
+            "expr": "ml:inference_rate",
+            "legendFormat": "Inference Rate (req/s)",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"}
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "Confusion Matrix (Last 1h)",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 26},
+        "targets": [
+          {
+            "expr": "fraud_true_positives",
+            "legendFormat": "True Positives",
+            "refId": "A"
+          },
+          {
+            "expr": "fraud_true_negatives",
+            "legendFormat": "True Negatives",
+            "refId": "B"
+          },
+          {
+            "expr": "fraud_false_positives",
+            "legendFormat": "False Positives",
+            "refId": "C"
+          },
+          {
+            "expr": "fraud_false_negatives",
+            "legendFormat": "False Negatives",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 13,
+        "title": "Model Alerts & Issues",
+        "type": "logs",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 26},
+        "targets": [
+          {
+            "expr": "{job=\"mlops-service\"} |= \"ERROR\" or \"WARN\"",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"}
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "model",
+          "type": "query",
+          "query": "label_values(model_inference_duration_seconds, model)",
+          "refresh": 1,
+          "includeAll": false,
+          "multi": false,
+          "current": {"value": "fraud_detection", "text": "fraud_detection"}
+        },
+        {
+          "name": "threshold",
+          "type": "custom",
+          "query": "0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9",
+          "current": {"value": "0.5", "text": "0.5"}
+        }
+      ]
+    }
+  }
+} 

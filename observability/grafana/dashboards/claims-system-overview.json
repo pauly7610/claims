@@ -1,0 +1,382 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Claims System - Overview",
+    "tags": ["claims", "overview", "business"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Health Status",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "up",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [
+              {"options": {"0": {"text": "DOWN", "color": "red"}}, "type": "value"},
+              {"options": {"1": {"text": "UP", "color": "green"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Claims Processed Today",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {
+            "expr": "increase(claims_processed_total[24h])",
+            "legendFormat": "Total Claims",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Fraud Detection Rate",
+        "type": "gauge",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "fraud:detection_rate * 100",
+            "legendFormat": "Fraud Rate %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "min": 0,
+            "max": 30,
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 15},
+                {"color": "red", "value": 25}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Average Response Time",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "expr": "claims:http_latency_p95",
+            "legendFormat": "95th Percentile",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 2}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Request Rate by Service",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [
+          {
+            "expr": "claims:http_request_rate",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "reqps"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Error Rate by Service",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [
+          {
+            "expr": "claims:http_error_rate * 100",
+            "legendFormat": "{{job}} Error Rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "custom": {
+              "fillOpacity": 20,
+              "lineWidth": 2
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Claims Processing Pipeline",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 12},
+        "targets": [
+          {
+            "expr": "rate(claims_processed_total{status=\"submitted\"}[5m])",
+            "legendFormat": "Submitted",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(claims_processed_total{status=\"under_review\"}[5m])",
+            "legendFormat": "Under Review",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(claims_processed_total{status=\"approved\"}[5m])",
+            "legendFormat": "Approved",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(claims_processed_total{status=\"denied\"}[5m])",
+            "legendFormat": "Denied",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "cps"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "ML Model Performance",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 12},
+        "targets": [
+          {
+            "expr": "fraud:model_accuracy * 100",
+            "legendFormat": "Accuracy %",
+            "refId": "A"
+          },
+          {
+            "expr": "fraud:model_precision * 100",
+            "legendFormat": "Precision %",
+            "refId": "B"
+          },
+          {
+            "expr": "fraud:model_recall * 100",
+            "legendFormat": "Recall %",
+            "refId": "C"
+          },
+          {
+            "expr": "fraud:model_f1_score * 100",
+            "legendFormat": "F1 Score %",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "min": 70,
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Payment Processing Status",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 12},
+        "targets": [
+          {
+            "expr": "sum by (status) (increase(payments_processed_total[1h]))",
+            "legendFormat": "{{status}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "mappings": [
+              {"options": {"completed": {"color": "green"}}, "type": "value"},
+              {"options": {"failed": {"color": "red"}}, "type": "value"},
+              {"options": {"pending": {"color": "yellow"}}, "type": "value"}
+            ]
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Database Performance",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 20},
+        "targets": [
+          {
+            "expr": "db:connection_utilization * 100",
+            "legendFormat": "Connection Utilization %",
+            "refId": "A"
+          },
+          {
+            "expr": "db:cache_hit_ratio * 100",
+            "legendFormat": "Cache Hit Ratio %",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(pg_stat_database_xact_commit[5m])",
+            "legendFormat": "Transactions/sec",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "System Resources",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 20},
+        "targets": [
+          {
+            "expr": "system:cpu_utilization * 100",
+            "legendFormat": "CPU Usage %",
+            "refId": "A"
+          },
+          {
+            "expr": "system:memory_utilization * 100",
+            "legendFormat": "Memory Usage %",
+            "refId": "B"
+          },
+          {
+            "expr": "system:disk_utilization * 100",
+            "legendFormat": "Disk Usage %",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "Active Alerts",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 26},
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\"}",
+            "format": "table",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 2}
+              ]
+            }
+          }
+        },
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "__name__": true,
+                "job": false,
+                "instance": false
+              },
+              "renameByName": {
+                "alertname": "Alert",
+                "severity": "Severity",
+                "category": "Category"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "query": "label_values(up, job)",
+          "refresh": 1,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "timerange",
+          "type": "interval",
+          "query": "5m,15m,30m,1h,3h,6h,12h,24h",
+          "current": {"value": "5m", "text": "5m"}
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "Prometheus",
+          "expr": "changes(up[5m]) > 0",
+          "titleFormat": "Service Restart: {{job}}",
+          "textFormat": "{{job}} restarted",
+          "iconColor": "blue"
+        }
+      ]
+    }
+  }
+} 

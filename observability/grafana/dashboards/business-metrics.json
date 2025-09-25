@@ -1,0 +1,162 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Business Metrics Dashboard",
+    "tags": ["business", "kpi", "claims"],
+    "timezone": "browser",
+    "refresh": "1m",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Claims Processing KPIs",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "increase(claims_processed_total[24h])",
+            "legendFormat": "Total Claims (24h)",
+            "refId": "A"
+          },
+          {
+            "expr": "claims:approval_rate * 100",
+            "legendFormat": "Approval Rate %",
+            "refId": "B"
+          },
+          {
+            "expr": "claims:average_amount",
+            "legendFormat": "Average Claim Amount",
+            "refId": "C"
+          },
+          {
+            "expr": "claims:processing_time_avg / 3600",
+            "legendFormat": "Avg Processing Time (hours)",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Approval Rate %"},
+              "properties": [{"id": "unit", "value": "percent"}]
+            },
+            {
+              "matcher": {"id": "byName", "options": "Average Claim Amount"},
+              "properties": [{"id": "unit", "value": "currencyUSD"}]
+            },
+            {
+              "matcher": {"id": "byName", "options": "Avg Processing Time (hours)"},
+              "properties": [{"id": "unit", "value": "h"}]
+            }
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "title": "Revenue Impact",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(claims_amount_sum{status=\"approved\"}[1h]) * 3600",
+            "legendFormat": "Approved Claims Value ($/hour)",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(claims_amount_sum{status=\"denied\"}[1h]) * 3600",
+            "legendFormat": "Denied Claims Value ($/hour)",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "currencyUSD"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Fraud Prevention Savings",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "sum(increase(fraud_predictions_total{prediction=\"fraud\"}[24h])) * 5000",
+            "legendFormat": "Estimated Fraud Prevented ($)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "unit": "currencyUSD",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 50000},
+                {"color": "red", "value": 100000}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Customer Satisfaction Trends",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "avg_over_time(customer_satisfaction_score[1h])",
+            "legendFormat": "Customer Satisfaction (1-5)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "min": 1,
+            "max": 5,
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Operational Efficiency",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "efficiency:successful_claims_per_hour",
+            "legendFormat": "Claims Processed/Hour",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "min": 0,
+            "max": 100,
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 50},
+                {"color": "green", "value": 80}
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+} 

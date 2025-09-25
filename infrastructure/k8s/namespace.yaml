@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: claims-system
+  labels:
+    name: claims-system
+    environment: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: claims-monitoring
+  labels:
+    name: claims-monitoring
+    environment: production 

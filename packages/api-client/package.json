@@ -1,0 +1,31 @@
+{
+  "name": "@claims/api-client",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src/",
+    "type-check": "tsc --noEmit",
+    "generate": "openapi-generator-cli generate -i ../../services/api-gateway/openapi.yaml -g typescript-axios -o ./src/generated",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    
+    "axios": "^1.0.0",
+    "ky": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "tsup": "^8.0.0",
+    "eslint": "^8.0.0",
+    "@openapitools/openapi-generator-cli": "^2.0.0"
+  }
+} 

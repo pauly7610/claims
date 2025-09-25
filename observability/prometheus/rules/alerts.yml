@@ -1,0 +1,285 @@
+groups:
+  - name: claims_system_alerts
+    rules:
+      # Service Health Alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 30 seconds."
+
+      - alert: ServiceHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          category: errors
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Service {{ $labels.job }} has error rate above 10% for more than 2 minutes."
+
+      - alert: ServiceHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High latency on {{ $labels.job }}"
+          description: "95th percentile latency is {{ $value }}s for {{ $labels.job }}."
+
+  - name: claims_business_alerts
+    rules:
+      # Claims Processing Alerts
+      - alert: HighFraudDetectionRate
+        expr: rate(fraud_predictions_total{prediction="fraud"}[1h]) / rate(fraud_predictions_total[1h]) > 0.25
+        for: 10m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "Unusually high fraud detection rate"
+          description: "Fraud detection rate is {{ $value | humanizePercentage }} over the last hour, above 25% threshold."
+
+      - alert: ClaimProcessingBacklog
+        expr: claims_pending_total > 100
+        for: 15m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "High number of pending claims"
+          description: "There are {{ $value }} pending claims, above normal threshold of 100."
+
+      - alert: PaymentProcessingFailures
+        expr: rate(payments_processed_total{status="failed"}[30m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+          category: business
+        annotations:
+          summary: "High payment processing failures"
+          description: "Payment failures at {{ $value }} per second over last 30 minutes."
+
+      - alert: DocumentProcessingStalled
+        expr: rate(files_uploaded_total[15m]) == 0 and hour() >= 8 and hour() <= 18
+        for: 30m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "No document uploads during business hours"
+          description: "No documents have been uploaded in the last 30 minutes during business hours."
+
+  - name: ml_model_alerts
+    rules:
+      # ML Model Performance Alerts
+      - alert: ModelPredictionLatencyHigh
+        expr: histogram_quantile(0.95, rate(model_inference_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: ml_performance
+        annotations:
+          summary: "ML model inference latency is high"
+          description: "95th percentile model inference time is {{ $value }}s, above 5s threshold."
+
+      - alert: ModelAccuracyDegraded
+        expr: model_accuracy < 0.8
+        for: 10m
+        labels:
+          severity: critical
+          category: ml_performance
+        annotations:
+          summary: "Model accuracy has degraded"
+          description: "Model accuracy is {{ $value }}, below 80% threshold."
+
+      - alert: DataDriftDetected
+        expr: data_drift_detected == 1
+        for: 0s
+        labels:
+          severity: warning
+          category: ml_quality
+        annotations:
+          summary: "Data drift detected in ML model"
+          description: "Significant data drift detected. Model may need retraining."
+
+      - alert: ModelTrainingFailed
+        expr: increase(model_training_failures_total[1h]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          category: ml_operations
+        annotations:
+          summary: "Model training failure"
+          description: "Model training has failed {{ $value }} times in the last hour."
+
+  - name: infrastructure_alerts
+    rules:
+      # Database Alerts
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "High database connection usage"
+          description: "Database connection usage is {{ $value | humanizePercentage }} of maximum."
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_database_tup_fetched[5m]) / rate(pg_stat_database_tup_returned[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Database queries are inefficient"
+          description: "High ratio of tuples fetched to returned, indicating inefficient queries."
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          category: cache
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value | humanizePercentage }} of maximum."
+
+      # File System Alerts
+      - alert: DiskSpaceHigh
+        expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "Disk space usage is high"
+          description: "Disk usage is {{ $value | humanizePercentage }} on {{ $labels.device }}."
+
+      - alert: FileUploadVolumeHigh
+        expr: rate(file_sizes_bytes_sum[1h]) > 1e9  # 1GB per hour
+        for: 30m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "High file upload volume"
+          description: "File upload volume is {{ $value | humanizeBytes }} per hour."
+
+  - name: security_alerts
+    rules:
+      # Security Alerts
+      - alert: HighAuthenticationFailureRate
+        expr: rate(authentication_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failures at {{ $value }} per second, possible brute force attack."
+
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(http_requests_total{status="403"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High rate of unauthorized access attempts"
+          description: "403 Forbidden responses at {{ $value }} per second."
+
+      - alert: SuspiciousFileUploads
+        expr: rate(files_uploaded_total{status="failed"}[10m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High rate of failed file uploads"
+          description: "Failed file uploads at {{ $value }} per second, possible malicious uploads."
+
+  - name: notification_alerts
+    rules:
+      # Notification System Alerts
+      - alert: NotificationDeliveryFailures
+        expr: rate(notifications_sent_total{status="failed"}[15m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: notifications
+        annotations:
+          summary: "High notification delivery failure rate"
+          description: "Notification failures at {{ $value }} per second."
+
+      - alert: EmailServiceDown
+        expr: notifications_sent_total{channel="email", status="failed"} - notifications_sent_total{channel="email", status="failed"} offset 1h > 10
+        for: 5m
+        labels:
+          severity: critical
+          category: notifications
+        annotations:
+          summary: "Email service appears to be down"
+          description: "Email delivery failures have increased significantly."
+
+  - name: business_kpi_alerts
+    rules:
+      # Business KPI Alerts
+      - alert: ClaimProcessingTimeHigh
+        expr: histogram_quantile(0.95, rate(claim_processing_duration_seconds_bucket[1h])) > 86400  # 24 hours
+        for: 30m
+        labels:
+          severity: warning
+          category: business_kpi
+        annotations:
+          summary: "Claim processing time is high"
+          description: "95th percentile claim processing time is {{ $value | humanizeDuration }}."
+
+      - alert: CustomerSatisfactionLow
+        expr: avg_over_time(customer_satisfaction_score[24h]) < 4.0
+        for: 1h
+        labels:
+          severity: warning
+          category: business_kpi
+        annotations:
+          summary: "Customer satisfaction score is low"
+          description: "Average customer satisfaction is {{ $value }} over last 24 hours."
+
+      - alert: FraudDetectionAccuracyLow
+        expr: fraud_detection_accuracy < 0.85
+        for: 30m
+        labels:
+          severity: critical
+          category: business_kpi
+        annotations:
+          summary: "Fraud detection accuracy is below threshold"
+          description: "Fraud detection accuracy is {{ $value }}, below 85% threshold."
+
+  - name: cost_optimization_alerts
+    rules:
+      # Cost Optimization Alerts
+      - alert: HighAPICallVolume
+        expr: rate(http_requests_total[1h]) > 10000
+        for: 30m
+        labels:
+          severity: info
+          category: cost
+        annotations:
+          summary: "High API call volume"
+          description: "API calls at {{ $value }} per second over last hour. Monitor for cost implications."
+
+      - alert: UnusedFileStorage
+        expr: (time() - file_last_accessed_timestamp) > 2592000  # 30 days
+        for: 1h
+        labels:
+          severity: info
+          category: cost
+        annotations:
+          summary: "Files not accessed for 30+ days"
+          description: "Consider archiving unused files to reduce storage costs." 

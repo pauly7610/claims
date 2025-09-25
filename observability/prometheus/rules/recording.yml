@@ -1,0 +1,187 @@
+groups:
+  - name: claims_system_recording_rules
+    interval: 30s
+    rules:
+      # Service Level Indicators (SLIs)
+      - record: claims:http_request_rate
+        expr: rate(http_requests_total[5m])
+
+      - record: claims:http_error_rate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])
+
+      - record: claims:http_success_rate
+        expr: rate(http_requests_total{status=~"2.."}[5m]) / rate(http_requests_total[5m])
+
+      - record: claims:http_latency_p50
+        expr: histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))
+
+      - record: claims:http_latency_p95
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+      - record: claims:http_latency_p99
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))
+
+  - name: business_metrics_recording
+    interval: 60s
+    rules:
+      # Claims Processing Metrics
+      - record: claims:processing_rate
+        expr: rate(claims_processed_total[1h])
+
+      - record: claims:approval_rate
+        expr: rate(claims_processed_total{status="approved"}[1h]) / rate(claims_processed_total[1h])
+
+      - record: claims:denial_rate
+        expr: rate(claims_processed_total{status="denied"}[1h]) / rate(claims_processed_total[1h])
+
+      - record: claims:average_amount
+        expr: rate(claims_amount_sum[1h]) / rate(claims_processed_total[1h])
+
+      - record: claims:processing_time_avg
+        expr: rate(claim_processing_duration_seconds_sum[1h]) / rate(claim_processing_duration_seconds_count[1h])
+
+      # Fraud Detection Metrics
+      - record: fraud:detection_rate
+        expr: rate(fraud_predictions_total{prediction="fraud"}[1h]) / rate(fraud_predictions_total[1h])
+
+      - record: fraud:model_accuracy
+        expr: (fraud_true_positives + fraud_true_negatives) / (fraud_true_positives + fraud_true_negatives + fraud_false_positives + fraud_false_negatives)
+
+      - record: fraud:model_precision
+        expr: fraud_true_positives / (fraud_true_positives + fraud_false_positives)
+
+      - record: fraud:model_recall
+        expr: fraud_true_positives / (fraud_true_positives + fraud_false_negatives)
+
+      - record: fraud:model_f1_score
+        expr: 2 * (fraud:model_precision * fraud:model_recall) / (fraud:model_precision + fraud:model_recall)
+
+      # Payment Processing Metrics
+      - record: payments:processing_rate
+        expr: rate(payments_processed_total[1h])
+
+      - record: payments:success_rate
+        expr: rate(payments_processed_total{status="completed"}[1h]) / rate(payments_processed_total[1h])
+
+      - record: payments:failure_rate
+        expr: rate(payments_processed_total{status="failed"}[1h]) / rate(payments_processed_total[1h])
+
+      - record: payments:average_amount
+        expr: rate(payment_amounts_sum[1h]) / rate(payments_processed_total[1h])
+
+      - record: payments:processing_time_avg
+        expr: rate(payment_processing_duration_seconds_sum[1h]) / rate(payment_processing_duration_seconds_count[1h])
+
+  - name: ml_model_recording
+    interval: 60s
+    rules:
+      # ML Model Performance
+      - record: ml:inference_rate
+        expr: rate(model_inference_total[5m])
+
+      - record: ml:inference_latency_avg
+        expr: rate(model_inference_duration_seconds_sum[5m]) / rate(model_inference_duration_seconds_count[5m])
+
+      - record: ml:inference_latency_p95
+        expr: histogram_quantile(0.95, rate(model_inference_duration_seconds_bucket[5m]))
+
+      - record: ml:model_load_avg
+        expr: avg_over_time(model_memory_usage_bytes[5m]) / avg_over_time(system_memory_total_bytes[5m])
+
+      # Document Processing
+      - record: documents:processing_rate
+        expr: rate(files_processed_total[10m])
+
+      - record: documents:ocr_success_rate
+        expr: rate(files_processed_total{operation="ocr", status="success"}[10m]) / rate(files_processed_total{operation="ocr"}[10m])
+
+      - record: documents:upload_rate
+        expr: rate(files_uploaded_total[10m])
+
+      - record: documents:storage_growth_rate
+        expr: rate(file_sizes_bytes_sum[1h])
+
+  - name: infrastructure_recording
+    interval: 30s
+    rules:
+      # Database Performance
+      - record: db:connection_utilization
+        expr: pg_stat_database_numbackends / pg_settings_max_connections
+
+      - record: db:query_rate
+        expr: rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m])
+
+      - record: db:cache_hit_ratio
+        expr: pg_stat_database_blks_hit / (pg_stat_database_blks_hit + pg_stat_database_blks_read)
+
+      # Redis Performance
+      - record: redis:memory_utilization
+        expr: redis_memory_used_bytes / redis_memory_max_bytes
+
+      - record: redis:hit_rate
+        expr: rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]))
+
+      - record: redis:command_rate
+        expr: rate(redis_commands_processed_total[5m])
+
+      # System Resources
+      - record: system:cpu_utilization
+        expr: 1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))
+
+      - record: system:memory_utilization
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes
+
+      - record: system:disk_utilization
+        expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes
+
+  - name: customer_experience_recording
+    interval: 300s  # 5 minutes
+    rules:
+      # Customer Journey Metrics
+      - record: customer:session_duration_avg
+        expr: rate(user_session_duration_seconds_sum[15m]) / rate(user_session_duration_seconds_count[15m])
+
+      - record: customer:page_load_time_p95
+        expr: histogram_quantile(0.95, rate(page_load_duration_seconds_bucket[15m]))
+
+      - record: customer:bounce_rate
+        expr: rate(user_sessions_total{pages_viewed="1"}[1h]) / rate(user_sessions_total[1h])
+
+      - record: customer:conversion_rate
+        expr: rate(claims_submitted_total[1h]) / rate(user_sessions_total[1h])
+
+      # Notification Effectiveness
+      - record: notifications:delivery_rate
+        expr: rate(notifications_sent_total{status=~"sent|simulated"}[1h]) / rate(notifications_sent_total[1h])
+
+      - record: notifications:open_rate
+        expr: rate(notifications_opened_total[1h]) / rate(notifications_sent_total{status=~"sent|simulated"}[1h])
+
+      - record: notifications:response_time_avg
+        expr: rate(notification_processing_duration_seconds_sum[1h]) / rate(notification_processing_duration_seconds_count[1h])
+
+  - name: cost_metrics_recording
+    interval: 3600s  # 1 hour
+    rules:
+      # Resource Cost Tracking
+      - record: cost:api_calls_hourly
+        expr: increase(http_requests_total[1h])
+
+      - record: cost:storage_growth_hourly
+        expr: increase(file_sizes_bytes_sum[1h])
+
+      - record: cost:compute_hours
+        expr: avg_over_time(system:cpu_utilization[1h])
+
+      - record: cost:data_transfer_hourly
+        expr: increase(http_request_size_bytes_sum[1h]) + increase(http_response_size_bytes_sum[1h])
+
+      # Efficiency Metrics
+      - record: efficiency:requests_per_cpu_hour
+        expr: cost:api_calls_hourly / cost:compute_hours
+
+      - record: efficiency:successful_claims_per_hour
+        expr: increase(claims_processed_total{status="approved"}[1h])
+
+      - record: efficiency:cost_per_claim
+        expr: cost:compute_hours / efficiency:successful_claims_per_hour 
