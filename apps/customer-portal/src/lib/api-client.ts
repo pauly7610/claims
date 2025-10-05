@@ -21,6 +21,20 @@ interface Claim {
   policy_number?: string
 }
 
+interface User {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+}
+
+interface RegisterData {
+  email: string
+  password: string
+  first_name: string
+  last_name: string
+}
+
 class ApiClient {
   private baseUrl: string
 
@@ -102,15 +116,15 @@ class ApiClient {
   }
 
   // Auth API methods
-  async login(email: string, password: string): Promise<ApiResponse<{ token: string; user: any }>> {
-    return this.request<{ token: string; user: any }>('/api/auth/login', {
+  async login(email: string, password: string): Promise<ApiResponse<{ token: string; user: User }>> {
+    return this.request<{ token: string; user: User }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
   }
 
-  async register(userData: any): Promise<ApiResponse<{ token: string; user: any }>> {
-    return this.request<{ token: string; user: any }>('/api/auth/register', {
+  async register(userData: RegisterData): Promise<ApiResponse<{ token: string; user: User }>> {
+    return this.request<{ token: string; user: User }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })

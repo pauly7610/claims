@@ -11,8 +11,12 @@ import {
   AlertCircle,
   DollarSign,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Sparkles,
+  Bell
 } from 'lucide-react'
+import { InteractiveCard, CardContent, CardHeader, CardTitle } from '../../components/ui/interactive-card'
+import { ModernButton } from '../../components/ui/modern-button'
 
 interface Claim {
   id: string
@@ -25,20 +29,34 @@ interface Claim {
   last_updated: string
 }
 
-// Simple UI Components
+// Simple UI Components (keeping only the ones not imported)
 const Card = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => 
   <div className={`bg-white rounded-lg border shadow-sm ${className}`}>{children}</div>
-const CardContent = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => 
-  <div className={className}>{children}</div>
-const CardHeader = ({ children }: { children: React.ReactNode }) => 
-  <div className="p-6 pb-0">{children}</div>
-const CardTitle = ({ children }: { children: React.ReactNode }) => 
-  <h3 className="text-lg font-semibold">{children}</h3>
-const Button = ({ children, variant = 'default', size = 'default', onClick, className = '' }: any) => 
+interface ButtonProps {
+  children: React.ReactNode;
+  variant?: 'default' | 'outline';
+  size?: 'default' | 'sm';
+  onClick?: () => void;
+  className?: string;
+}
+
+interface BadgeProps {
+  children: React.ReactNode;
+  variant?: 'default' | 'success' | 'warning' | 'destructive' | 'secondary';
+}
+
+interface AlertProps {
+  title: string;
+  description: string;
+  variant?: 'default' | 'destructive';
+  className?: string;
+}
+
+const Button = ({ children, variant = 'default', size = 'default', onClick, className = '' }: ButtonProps) => 
   <button onClick={onClick} className={`px-4 py-2 rounded-md font-medium ${variant === 'outline' ? 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50' : 'bg-blue-600 text-white hover:bg-blue-700'} ${size === 'sm' ? 'px-3 py-1 text-sm' : ''} ${className}`}>{children}</button>
-const Badge = ({ children, variant = 'default' }: any) => 
-  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${variant === 'success' ? 'bg-green-100 text-green-800' : variant === 'warning' ? 'bg-yellow-100 text-yellow-800' : variant === 'destructive' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>{children}</span>
-const Alert = ({ title, description, variant = 'default', className = '' }: any) => 
+const Badge = ({ children, variant = 'default' }: BadgeProps) => 
+  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${variant === 'success' ? 'bg-green-100 text-green-800' : variant === 'warning' ? 'bg-yellow-100 text-yellow-800' : variant === 'destructive' ? 'bg-red-100 text-red-800' : variant === 'secondary' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{children}</span>
+const Alert = ({ title, description, variant = 'default', className = '' }: AlertProps) => 
   <div className={`p-4 rounded-md ${variant === 'destructive' ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'} ${className}`}>
     <h4 className="font-medium">{title}</h4>
     <p className="text-sm mt-1">{description}</p>
@@ -128,10 +146,9 @@ export default function DashboardPage() {
               <p className="text-gray-600">Manage your insurance claims</p>
             </div>
             <Link href="/dashboard/claims/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
+              <ModernButton variant="primary" icon={<Plus className="h-4 w-4" />}>
                 New Claim
-              </Button>
+              </ModernButton>
             </Link>
           </div>
         </div>
@@ -147,57 +164,81 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+        {/* Modern Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <InteractiveCard className="group">
             <CardContent className="p-6">
               <div className="flex items-center">
-                <FileText className="h-8 w-8 text-blue-600" />
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Claims</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <div className="flex items-center mt-1">
+                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-xs text-green-600 font-medium">+12% this month</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </InteractiveCard>
 
-          <Card>
+          <InteractiveCard className="group">
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Clock className="h-8 w-8 text-yellow-600" />
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <Clock className="h-6 w-6 text-white" />
+                </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Pending</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+                  <div className="flex items-center mt-1">
+                    <Sparkles className="h-3 w-3 text-blue-500 mr-1" />
+                    <span className="text-xs text-blue-600 font-medium">AI Processing</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </InteractiveCard>
 
-          <Card>
+          <InteractiveCard className="group">
             <CardContent className="p-6">
               <div className="flex items-center">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <CheckCircle className="h-6 w-6 text-white" />
+                </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Approved</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
+                  <div className="flex items-center mt-1">
+                    <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-xs text-green-600 font-medium">97.2% rate</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </InteractiveCard>
 
-          <Card>
+          <InteractiveCard className="group">
             <CardContent className="p-6">
               <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-green-600" />
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Value</p>
                   <p className="text-2xl font-bold text-gray-900">
                     ${stats.totalValue.toLocaleString()}
                   </p>
+                  <div className="flex items-center mt-1">
+                    <DollarSign className="h-3 w-3 text-purple-500 mr-1" />
+                    <span className="text-xs text-purple-600 font-medium">Avg: 18.5hrs</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </InteractiveCard>
         </div>
 
         {/* Claims Section */}
